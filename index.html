@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo.viz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --border: #1e1e2e;
+      --text: #e2e0ff;
+      --muted: #5a5880;
+      --accent: #7c6af7;
+      --accent2: #f76a8c;
+      --accent3: #6af7c8;
+      --accent4: #f7c96a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* Decorative background glow */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -20%;
+      left: 30%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(124,106,247,0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header {
+      position: relative;
+      z-index: 1;
+      padding: 4rem 4rem 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+      margin-bottom: 0.6rem;
+    }
+
+    .tagline {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      padding: 3rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+    }
+
+    .category {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .cat-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .cat-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .cat-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.4rem 1.6rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      right: 0; height: 2px;
+      background: var(--card-accent, var(--accent));
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .card:hover {
+      border-color: rgba(124,106,247,0.35);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .card:hover::before { opacity: 1; }
+
+    .card.soon {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .card-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+
+    .card-name {
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .card-desc {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      align-self: flex-start;
+      margin-top: auto;
+    }
+
+    .badge-ready {
+      background: rgba(106,247,200,0.1);
+      color: var(--accent3);
+      border: 1px solid rgba(106,247,200,0.2);
+    }
+
+    .badge-soon {
+      background: rgba(90,88,128,0.2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    footer {
+      position: relative;
+      z-index: 1;
+      padding: 1.5rem 4rem;
+      border-top: 1px solid var(--border);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    @media (max-width: 600px) {
+      header, main, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .logo { font-size: 2rem; }
+      .card-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">algo.viz</div>
+  <div class="tagline">알고리즘 시각화 학습 도구</div>
+</header>
+
+<main>
+
+  <!-- 정렬 -->
+  <div class="category">
+    <div class="cat-header">
+      <div class="cat-label">정렬 알고리즘</div>
+      <div class="cat-line"></div>
+    </div>
+    <div class="card-grid">
+      <a class="card" href="sort.html" style="--card-accent: var(--accent)">
+        <div class="card-icon">📊</div>
+        <div class="card-name">정렬 6종</div>
+        <div class="card-desc">Bubble · Selection · Insertion<br>Merge · Quick · Heap</div>
+        <div class="card-badge badge-ready">● 사용 가능</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 그래프 탐색 -->
+  <div class="category">
+    <div class="cat-header">
+      <div class="cat-label">그래프 탐색</div>
+      <div class="cat-line"></div>
+    </div>
+    <div class="card-grid">
+      <a class="card" href="graph.html" style="--card-accent: var(--accent2)">
+        <div class="card-icon">🔍</div>
+        <div class="card-name">BFS / DFS</div>
+        <div class="card-desc">너비 우선 탐색 &amp; 깊이 우선 탐색<br>랜덤 그래프 시각화</div>
+        <div class="card-badge badge-ready">● 사용 가능</div>
+      </a>
+      <div class="card soon" style="--card-accent: var(--accent2)">
+        <div class="card-icon">🗺️</div>
+        <div class="card-name">Dijkstra / A*</div>
+        <div class="card-desc">최단 경로 탐색<br>그리드 맵 시각화</div>
+        <div class="card-badge badge-soon">준비 중</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 트리 -->
+  <div class="category">
+    <div class="cat-header">
+      <div class="cat-label">트리</div>
+      <div class="cat-line"></div>
+    </div>
+    <div class="card-grid">
+      <div class="card soon" style="--card-accent: var(--accent3)">
+        <div class="card-icon">🌳</div>
+        <div class="card-name">Binary Search Tree</div>
+        <div class="card-desc">삽입 · 삭제 · 탐색<br>트리 구조 시각화</div>
+        <div class="card-badge badge-soon">준비 중</div>
+      </div>
+      <div class="card soon" style="--card-accent: var(--accent3)">
+        <div class="card-icon">⚖️</div>
+        <div class="card-name">AVL Tree</div>
+        <div class="card-desc">자가 균형 이진 트리<br>회전 시각화</div>
+        <div class="card-badge badge-soon">준비 중</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 자료구조 -->
+  <div class="category">
+    <div class="cat-header">
+      <div class="cat-label">자료구조 조작</div>
+      <div class="cat-line"></div>
+    </div>
+    <div class="card-grid">
+      <div class="card soon" style="--card-accent: var(--accent4)">
+        <div class="card-icon">📚</div>
+        <div class="card-name">Stack</div>
+        <div class="card-desc">LIFO 구조<br>push / pop 시각화</div>
+        <div class="card-badge badge-soon">준비 중</div>
+      </div>
+      <div class="card soon" style="--card-accent: var(--accent4)">
+        <div class="card-icon">🚶</div>
+        <div class="card-name">Queue</div>
+        <div class="card-desc">FIFO 구조<br>enqueue / dequeue 시각화</div>
+        <div class="card-badge badge-soon">준비 중</div>
+      </div>
+      <div class="card soon" style="--card-accent: var(--accent4)">
+        <div class="card-icon">🔗</div>
+        <div class="card-name">Linked List</div>
+        <div class="card-desc">단방향 연결 리스트<br>삽입 · 삭제 · 탐색</div>
+        <div class="card-badge badge-soon">준비 중</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <span>algo.viz</span>
+  <span>← 뒤로가기 지원 · 키보드 단축키 지원</span>
+</footer>
+
+</body>
+</html>
