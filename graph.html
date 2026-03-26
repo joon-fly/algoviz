@@ -520,7 +520,7 @@ function resizeCanvas() {
   if (snapshots.length) drawSnapshot(snapshots[stepIdx]);
 }
 
-window.addEventListener('resize', resizeCanvas);
+window.addEventListener('resize', () => { if (nodes.length) generateAll(); else resizeCanvas(); });
 
 // ═══════════════════════════════════════════════
 //  GRAPH GENERATION
@@ -528,20 +528,25 @@ window.addEventListener('resize', resizeCanvas);
 function generateGraph(n) {
   const W = canvasWrap.clientWidth  || 600;
   const H = canvasWrap.clientHeight || 320;
-  const pad = 55, r = Math.min(W, H) / 2 - pad;
+
+  // Node radius scales down with more nodes; keep padding accordingly
+  const nodeR = Math.max(14, Math.min(22, 220 / n));
+  const pad   = nodeR + 18;          // guaranteed safe margin
   const cx = W / 2, cy = H / 2;
+  const rx = W / 2 - pad;           // ellipse x-radius
+  const ry = H / 2 - pad;           // ellipse y-radius
 
   nodes = [];
   for (let i = 0; i < n; i++) {
-    // Place nodes in a rough circle with jitter
-    const angle = (2 * Math.PI * i / n) - Math.PI / 2;
-    const jitter = (Math.random() - 0.5) * r * 0.35;
-    nodes.push({
-      id: i,
-      x: cx + (r + jitter) * Math.cos(angle),
-      y: cy + (r + jitter) * Math.sin(angle),
-      label: String(i),
-    });
+    // Evenly spaced on ellipse, with a small bounded jitter
+    const angle  = (2 * Math.PI * i / n) - Math.PI / 2;
+    const jitterScale = 0.22;
+    const jx = (Math.random() - 0.5) * rx * jitterScale;
+    const jy = (Math.random() - 0.5) * ry * jitterScale;
+    // Clamp so node always stays inside canvas
+    const x = Math.max(pad, Math.min(W - pad, cx + rx * Math.cos(angle) + jx));
+    const y = Math.max(pad, Math.min(H - pad, cy + ry * Math.sin(angle) + jy));
+    nodes.push({ id: i, x, y, label: String(i) });
   }
 
   // Build edges: ensure connected, then add extras
@@ -582,7 +587,7 @@ function drawSnapshot(s) {
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
 
-  const nodeR = Math.max(16, Math.min(22, 220 / nodes.length));
+  const nodeR = Math.max(14, Math.min(22, 220 / nodes.length));
 
   // Draw edges
   edges.forEach(({u, v}, i) => {
