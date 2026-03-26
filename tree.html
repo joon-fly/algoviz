@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>트리 — algo.viz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="src/common/styles.css" />
+  <style>
+    .av-algo-btn.active {
+      color: var(--accent3);
+      background: rgba(106,247,200,0.08);
+      border-color: rgba(106,247,200,0.25);
+    }
+    .av-algo-btn.active::before { background: var(--accent3); }
+    .av-step-btn--play { background: var(--accent3); border-color: var(--accent3); color: #0a0a0f; }
+    .av-step-btn--play:hover:not(:disabled) { filter: brightness(0.88) !important; }
+
+    .canvas-wrap {
+      flex: 1; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; position: relative; min-height: 320px;
+    }
+
+    canvas { width:100%; height:100%; display:block; }
+
+    /* Input row */
+    .input-row {
+      display: flex; gap: 0.5rem; align-items: center;
+    }
+
+    .av-input {
+      flex: 1; background: var(--border); color: var(--text);
+      border: 1px solid var(--border); border-radius: 8px;
+      font-family: 'Space Mono', monospace; font-size: 0.82rem;
+      padding: 0.5rem 0.75rem; outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .av-input:focus { border-color: var(--accent3); }
+    .av-input::placeholder { color: var(--muted); }
+
+    .av-btn--icon {
+      flex: none; width: 38px; height: 36px;
+      background: var(--border); color: var(--text);
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: 1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .av-btn--icon:hover { background: #252535; }
+
+    /* Tree values display */
+    .tree-values {
+      font-family: 'Space Mono', monospace; font-size: 0.68rem;
+      color: var(--muted); line-height: 1.6;
+      background: rgba(0,0,0,0.2); border-radius: 6px;
+      padding: 0.5rem 0.7rem;
+    }
+
+    .tree-values span { color: var(--accent3); }
+  </style>
+</head>
+<body>
+<nav class="av-nav">
+  <a href="index.html" class="av-nav__logo">algo.viz</a>
+  <span class="av-nav__sep">/</span>
+  <span class="av-nav__page">트리</span>
+</nav>
+
+<div class="av-layout">
+  <aside class="av-sidebar">
+    <div>
+      <div class="av-section-label">알고리즘</div>
+      <div class="av-algo-list" id="algoList">
+        <button class="av-algo-btn active" data-algo="insert">삽입 (Insert)</button>
+        <button class="av-algo-btn" data-algo="search">탐색 (Search)</button>
+        <button class="av-algo-btn" data-algo="delete">삭제 (Delete)</button>
+      </div>
+    </div>
+
+    <div class="av-info-panel av-info-panel--tree" id="infoPanel">
+      <div class="av-algo-desc" id="algoDesc"></div>
+      <table class="av-complexity-table">
+        <thead><tr><th>경우</th><th>시간 복잡도</th></tr></thead>
+        <tbody>
+          <tr><td>평균</td><td class="tc-avg"  id="tcAvg">—</td></tr>
+          <tr><td>최악</td><td class="tc-worst" id="tcWorst">—</td></tr>
+        </tbody>
+      </table>
+      <div class="av-meta-row" id="metaRow"></div>
+    </div>
+
+    <!-- Input -->
+    <div class="av-controls">
+      <div class="av-section-label">값 입력</div>
+      <div class="input-row">
+        <input class="av-input" type="number" id="valueInput" placeholder="숫자 입력..." min="1" max="999" />
+        <button class="av-btn--icon" id="actionBtn" title="실행">▶</button>
+      </div>
+      <div class="av-btn-row">
+        <button class="av-btn av-btn--primary-teal" id="randomBtn">랜덤 삽입</button>
+        <button class="av-btn av-btn--secondary"    id="clearBtn">트리 초기화</button>
+      </div>
+
+      <div class="av-slider-wrap">
+        <label>재생 속도 <span id="speedVal">중간</span></label>
+        <input type="range" id="speedSlider" min="1" max="5" value="3" />
+      </div>
+
+      <div class="tree-values" id="treeValues">
+        중위 순서: <span>—</span>
+      </div>
+    </div>
+
+    <div class="av-legend">
+      <div class="av-section-label">범례</div>
+      <div class="av-legend-item"><div class="av-legend-dot av-legend-dot--circle" style="background:#2a2845"></div>일반 노드</div>
+      <div class="av-legend-item"><div class="av-legend-dot av-legend-dot--circle" style="background:#f76a8c"></div>탐색 중</div>
+      <div class="av-legend-item"><div class="av-legend-dot av-legend-dot--circle" style="background:#6af7c8"></div>발견 / 완료</div>
+      <div class="av-legend-item"><div class="av-legend-dot av-legend-dot--circle" style="background:#7c6af7"></div>삽입된 노드</div>
+      <div class="av-legend-item"><div class="av-legend-dot av-legend-dot--circle" style="background:#3a3060"></div>탐색 경로</div>
+    </div>
+  </aside>
+
+  <main class="av-main">
+    <div class="av-stats-bar">
+      <div class="av-stat">
+        <div class="av-stat__label">연산</div>
+        <div class="av-stat__value" id="opName">BST 삽입</div>
+      </div>
+      <div class="av-stat">
+        <div class="av-stat__label">노드 수</div>
+        <div class="av-stat__value av-stat__value--teal" id="nodeCount">0</div>
+      </div>
+      <div class="av-stat">
+        <div class="av-stat__label">트리 높이</div>
+        <div class="av-stat__value av-stat__value--purple" id="treeHeight">0</div>
+      </div>
+      <div class="av-status av-status--idle" id="statusBadge">IDLE</div>
+    </div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="treeCanvas"></canvas>
+    </div>
+
+    <div class="av-step-bar">
+      <div class="av-step-bar__counter"><span id="stepCur">0</span> / <span id="stepTot">0</span></div>
+      <button class="av-step-btn" id="firstBtn" disabled>⏮</button>
+      <button class="av-step-btn" id="prevBtn"  disabled>◀</button>
+      <button class="av-step-btn av-step-btn--play" id="playBtn" disabled>▶</button>
+      <button class="av-step-btn" id="nextBtn"  disabled>▶|</button>
+      <button class="av-step-btn" id="lastBtn"  disabled>⏭</button>
+      <div class="av-step-bar__desc" id="stepDesc">값을 입력하고 연산을 선택하세요</div>
+      <div class="av-step-bar__kbd">← → Space</div>
+    </div>
+
+    <div class="av-code-panel"><pre id="pseudoCode"></pre></div>
+  </main>
+</div>
+
+<script type="module" src="src/tree/main.js"></script>
+</body>
+</html>
